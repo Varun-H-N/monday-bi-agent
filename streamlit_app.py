@@ -1,11 +1,12 @@
-import os
 import streamlit as st
-from dotenv import load_dotenv
 
-load_dotenv()
+from config import get_setting
 
-# Read secrets (works locally and on Streamlit Cloud)
-DEALS_BOARD_ID = st.secrets.get("DEALS_BOARD_ID") or os.getenv("DEALS_BOARD_ID")
+st.set_page_config(
+    page_title="AI Business Intelligence Agent",
+    page_icon=":bar_chart:",
+    layout="wide"
+)
 
 from monday_api import get_board_data
 from data_cleaning import board_to_dataframe
@@ -13,13 +14,10 @@ from preprocessing import clean_dataframe
 from ai_agent import answer_question
 from dashboard import founder_summary
 
-st.set_page_config(
-    page_title="AI Business Intelligence Agent",
-    page_icon="📊",
-    layout="wide"
-)
+# Read secrets (works locally and on Streamlit Cloud)
+DEALS_BOARD_ID = get_setting("DEALS_BOARD_ID")
 
-st.title("📊 AI Business Intelligence Agent")
+st.title("AI Business Intelligence Agent")
 st.write("Ask questions about your Monday.com Deals data using Google Gemini AI.")
 
 @st.cache_data

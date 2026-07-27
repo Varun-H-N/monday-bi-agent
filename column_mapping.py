@@ -1,10 +1,8 @@
-import os
-from dotenv import load_dotenv
 from monday_api import get_board_data
+from config import get_setting
 
-load_dotenv()
 
-data = get_board_data(os.getenv("DEALS_BOARD_ID"))
+data = get_board_data(get_setting("DEALS_BOARD_ID"))
 
 columns = data["data"]["boards"][0]["columns"]
 

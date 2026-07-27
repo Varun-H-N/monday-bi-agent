@@ -15,15 +15,20 @@ COLUMN_MAPPING = {
 }
 
 def board_to_dataframe(board_json):
-    items = board_json["data"]["boards"][0]["items_page"]["items"]
+    boards = board_json.get("data", {}).get("boards") or []
+
+    if not boards:
+        return pd.DataFrame()
+
+    items = boards[0].get("items_page", {}).get("items", [])
 
     rows = []
 
     for item in items:
-        row = {"Lead Name": item["name"]}
+        row = {"Lead Name": item.get("name")}
 
-        for column in item["column_values"]:
-            row[column["id"]] = column["text"]
+        for column in item.get("column_values", []):
+            row[column.get("id")] = column.get("text")
 
         rows.append(row)
 

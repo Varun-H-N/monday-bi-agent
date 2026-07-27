@@ -1,42 +1,56 @@
-import os
 import requests
-import streamlit as st
-from dotenv import load_dotenv
 
-load_dotenv()
+from config import get_setting
 
-MONDAY_API_KEY = st.secrets.get("MONDAY_API_KEY") or os.getenv("MONDAY_API_KEY")
 
 API_URL = "https://api.monday.com/v2"
 
-HEADERS = {
-    "Authorization": MONDAY_API_KEY,
-    "Content-Type": "application/json"
-}
 
 def get_board_data(board_id):
-    query = f"""
-    query {{
-      boards(ids: {board_id}) {{
-        items_page {{
-          items {{
+    api_key = get_setting("MONDAY_API_KEY")
+
+    if not api_key:
+        raise ValueError("MONDAY_API_KEY not found. Add it to .env or Streamlit secrets.")
+
+    if not board_id:
+        raise ValueError("Board ID not found. Add DEALS_BOARD_ID to .env or Streamlit secrets.")
+
+    query = """
+    query ($board_ids: [ID!]) {
+      boards(ids: $board_ids) {
+        columns {
+          id
+          title
+        }
+        items_page(limit: 500) {
+          items {
             name
-            column_values {{
+            column_values {
               id
               text
-            }}
-          }}
-        }}
-      }}
-    }}
+            }
+          }
+        }
+      }
+    }
     """
 
     response = requests.post(
         API_URL,
-        json={"query": query},
-        headers=HEADERS
+        json={"query": query, "variables": {"board_ids": [str(board_id)]}},
+        headers={
+            "Authorization": api_key,
+            "Content-Type": "application/json",
+        },
+        timeout=30,
     )
 
     response.raise_for_status()
 
-    return response.json()
+    payload = response.json()
+
+    if payload.get("errors"):
+        message = payload["errors"][0].get("message", payload["errors"])
+        raise RuntimeError(f"Monday API error: {message}")
+
+    return payload
