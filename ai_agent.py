@@ -36,7 +36,7 @@ def answer_question(question, df):
     if client is None:
         return "GEMINI_API_KEY is missing. Add it to your .env file locally or to Streamlit Cloud secrets."
 
-    model = get_setting("GEMINI_MODEL", "gemini-2.5-flash")
+    model = "gemini-2.5-flash-lite"
     prompt = f"""
 You are a business intelligence analyst for Monday.com Deals data.
 Answer the user's question using only the data provided below.
