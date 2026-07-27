@@ -22,9 +22,35 @@ Columns:
 
 Row count: {len(df)}
 
-Data preview, limited to 50 rows:
+Data preview (first 50 rows):
 {preview}
 """
+
+
+def _get_available_model(client):
+    """
+    Returns the first Gemini model that supports generateContent.
+    """
+    try:
+        models = client.models.list()
+
+        for model in models:
+            name = model.name
+
+            # Keep only Gemini models
+            if "gemini" not in name.lower():
+                continue
+
+            # Check if generateContent is supported
+            methods = getattr(model, "supported_generation_methods", [])
+
+            if "generateContent" in methods:
+                return name
+
+    except Exception as e:
+        raise Exception(f"Unable to list Gemini models: {e}")
+
+    raise Exception("No compatible Gemini model found.")
 
 
 def answer_question(question, df):
@@ -34,14 +60,19 @@ def answer_question(question, df):
     client = _get_client()
 
     if client is None:
-        return "GEMINI_API_KEY is missing. Add it to your .env file locally or to Streamlit Cloud secrets."
+        return (
+            "GEMINI_API_KEY is missing. "
+            "Add it to Streamlit Secrets or your .env file."
+        )
 
-    model = "gemini-2.5-flash-lite"
     prompt = f"""
-You are a business intelligence analyst for Monday.com Deals data.
-Answer the user's question using only the data provided below.
-If the data is insufficient, say what is missing.
-Keep the answer concise and include useful numbers where possible.
+You are a Business Intelligence Analyst.
+
+Answer ONLY using the provided Monday.com Deals data.
+
+If the answer is not available in the data, clearly say so.
+
+Keep the answer concise.
 
 Question:
 {question}
@@ -51,11 +82,14 @@ Data:
 """
 
     try:
+        model = _get_available_model(client)
+
         response = client.models.generate_content(
             model=model,
             contents=prompt,
         )
-    except Exception as exc:
-        return f"Gemini request failed: {exc}"
 
-    return getattr(response, "text", "").strip() or "Gemini returned an empty response."
+        return response.text.strip()
+
+    except Exception as e:
+        return f"Gemini request failed:\n\n{e}"
